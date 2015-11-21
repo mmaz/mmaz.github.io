@@ -1,0 +1,114 @@
+<head><title>frontend.hs</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="generator" content="highlight-kate"><style type="text/css">div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+</style></head><body><div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span class="ot">{-# LANGUAGE RecursiveDo, OverloadedStrings, TupleSections, ScopedTypeVariables, ForeignFunctionInterface, JavaScriptFFI, CPP #-}</span>
+<span class="kw">import           </span><span class="dt">Reflex</span>
+<span class="kw">import           </span><span class="dt">Reflex.Dom</span>
+<span class="kw">import           </span><span class="dt">Control.Applicative</span>
+<span class="kw">import           </span><span class="dt">Data.Time.Clock</span> (getCurrentTime)
+<span class="kw">import           </span><span class="dt">Control.Monad.IO.Class</span>
+<span class="kw">import           </span><span class="dt">Data.Map</span> (<span class="dt">Map</span>)
+<span class="kw">import           </span><span class="dt">Data.Monoid</span>
+<span class="kw">import           </span><span class="dt">GHCJS.DOM.Types</span> (<span class="dt">Element</span>, unElement)
+<span class="kw">import           </span><span class="dt">GHCJS.DOM.Element</span> (toElement)
+<span class="kw">import           </span><span class="dt">GHCJS.Prim</span> (<span class="dt">JSRef</span>)
+
+<span class="kw">data</span> <span class="dt">Discrete</span> <span class="fu">=</span> <span class="dt">Down</span> <span class="fu">|</span> <span class="dt">Up</span> <span class="kw">deriving</span> (<span class="dt">Eq</span>)
+
+<span class="ot">discreteButton ::</span> <span class="dt">MonadWidget</span> t m <span class="ot">=&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> m (<span class="dt">Event</span> t <span class="dt">Discrete</span>)
+discreteButton btntext <span class="fu">=</span> <span class="kw">do</span>
+  <span class="kw">let</span> attrs <span class="fu">=</span> (<span class="st">&quot;class&quot;</span> <span class="fu">=:</span> <span class="st">&quot;waves-effect waves-light pink accent-2 btn&quot;</span>) <span class="fu">&lt;&gt;</span> (<span class="st">&quot;style&quot;</span> <span class="fu">=:</span> <span class="st">&quot;font-size:30px&quot;</span>)
+  (btnEl, _) <span class="ot">&lt;-</span> elAttr&#39; <span class="st">&quot;button&quot;</span> attrs <span class="fu">$</span> text btntext
+  return <span class="fu">$</span> leftmost [const <span class="dt">Down</span> <span class="fu">&lt;$&gt;</span> domEvent <span class="dt">Mousedown</span> btnEl, const <span class="dt">Up</span> <span class="fu">&lt;$&gt;</span> domEvent <span class="dt">Mouseup</span> btnEl, const <span class="dt">Up</span> <span class="fu">&lt;$&gt;</span> domEvent <span class="dt">Mouseleave</span> btnEl] <span class="co">-- NB: Mouseout is *not* what you want</span>
+
+<span class="kw">data</span> <span class="dt">BotAPI</span> <span class="fu">=</span> <span class="dt">BotAPI</span> <span class="dt">String</span> <span class="dt">String</span>
+forward, backward, cw, ccw,<span class="ot"> stop ::</span> <span class="dt">BotAPI</span>
+forward <span class="fu">=</span> <span class="dt">BotAPI</span> <span class="st">&quot;↑&quot;</span> <span class="st">&quot;forward&quot;</span>
+backward <span class="fu">=</span> <span class="dt">BotAPI</span> <span class="st">&quot;↓&quot;</span> <span class="st">&quot;backward&quot;</span>
+cw <span class="fu">=</span> <span class="dt">BotAPI</span> <span class="st">&quot;⟳&quot;</span> <span class="st">&quot;cw&quot;</span>
+ccw <span class="fu">=</span> <span class="dt">BotAPI</span> <span class="st">&quot;⟲&quot;</span> <span class="st">&quot;ccw&quot;</span>
+stop <span class="fu">=</span> <span class="dt">BotAPI</span> <span class="st">&quot;⇏&quot;</span> stopurl
+lower <span class="fu">=</span> <span class="dt">BotAPI</span> <span class="st">&quot;▼&quot;</span> <span class="st">&quot;lower&quot;</span>
+higher <span class="fu">=</span> <span class="dt">BotAPI</span> <span class="st">&quot;▲&quot;</span> <span class="st">&quot;higher&quot;</span>
+<span class="ot">stopurl ::</span> <span class="dt">String</span>
+stopurl <span class="fu">=</span> <span class="st">&quot;stop&quot;</span>
+
+<span class="ot">controlParrot ::</span> <span class="dt">MonadWidget</span> t m <span class="ot">=&gt;</span> <span class="dt">BotAPI</span> <span class="ot">-&gt;</span> m ()
+controlParrot (<span class="dt">BotAPI</span> icon url) <span class="fu">=</span> <span class="kw">do</span>
+  evDis <span class="ot">&lt;-</span> discreteButton icon
+  <span class="kw">let</span> start <span class="fu">=</span> xhrRequest <span class="st">&quot;GET&quot;</span> url def
+  <span class="kw">let</span> end <span class="fu">=</span> xhrRequest <span class="st">&quot;GET&quot;</span> stopurl def
+  performRequestAsync <span class="fu">$</span> const start <span class="fu">&lt;$&gt;</span> ffilter (<span class="fu">==</span> <span class="dt">Down</span>) evDis
+  performRequestAsync <span class="fu">$</span> const end <span class="fu">&lt;$&gt;</span> ffilter (<span class="fu">==</span> <span class="dt">Up</span>) evDis
+  blank
+
+<span class="ot">quad ::</span> <span class="dt">MonadWidget</span> t m <span class="ot">=&gt;</span> m ()
+quad <span class="fu">=</span> <span class="kw">do</span>
+  elAttr <span class="st">&quot;div&quot;</span> img <span class="fu">$</span> elAttr <span class="st">&quot;div&quot;</span> (<span class="st">&quot;style&quot;</span> <span class="fu">=:</span> <span class="st">&quot;font-size: 50px; width: 612px; height: 500px;&quot;</span>) <span class="fu">$</span> <span class="kw">do</span>
+    divClass <span class="st">&quot;container&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+      divClass <span class="st">&quot;row&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+        divClass <span class="st">&quot;col s4 center-align&quot;</span> <span class="fu">$</span> controlParrot lower
+        divClass <span class="st">&quot;col s4 center-align&quot;</span> <span class="fu">$</span> controlParrot stop
+        divClass <span class="st">&quot;col s4 center-align&quot;</span> <span class="fu">$</span> controlParrot higher
+      divClass <span class="st">&quot;row&quot;</span> <span class="fu">$</span> divClass <span class="st">&quot;col s12 center-align&quot;</span> <span class="fu">$</span> controlParrot forward
+      divClass <span class="st">&quot;row&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+        divClass <span class="st">&quot;col s6 center-align&quot;</span> <span class="fu">$</span> controlParrot ccw
+        divClass <span class="st">&quot;col s6 center-align&quot;</span> <span class="fu">$</span> controlParrot cw
+      divClass <span class="st">&quot;row&quot;</span> <span class="fu">$</span> divClass <span class="st">&quot;col s12 center-align&quot;</span> <span class="fu">$</span> controlParrot backward
+      divClass <span class="st">&quot;row&quot;</span> <span class="fu">$</span> divClass <span class="st">&quot;col s12 center-align&quot;</span> <span class="fu">$</span> divClass <span class="st">&quot;chip&quot;</span> <span class="fu">$</span> text <span class="st">&quot;Haskell drone controller&quot;</span>
+  <span class="kw">where</span> img <span class="fu">=</span> <span class="st">&quot;style&quot;</span> <span class="fu">=:</span> <span class="st">&quot;width: 612px; margin: 0 auto; background-image: url(\&quot;rs.jpg\&quot;); background-repeat: no-repeat; background-size: 612px; &quot;</span>
+
+<span class="ot">connect ::</span> <span class="dt">MonadWidget</span> t m <span class="ot">=&gt;</span> m ()
+connect <span class="fu">=</span> divClass <span class="st">&quot;row&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+  <span class="kw">let</span> a1 <span class="fu">=</span> <span class="st">&quot;class&quot;</span> <span class="fu">=:</span> <span class="st">&quot;waves-effect waves-light green btn&quot;</span>
+      a2 <span class="fu">=</span> <span class="st">&quot;class&quot;</span> <span class="fu">=:</span> <span class="st">&quot;waves-effect waves-light orange btn&quot;</span>
+      a3 <span class="fu">=</span> <span class="st">&quot;class&quot;</span> <span class="fu">=:</span> <span class="st">&quot;waves-effect waves-light red btn&quot;</span>
+      a4 <span class="fu">=</span> <span class="st">&quot;class&quot;</span> <span class="fu">=:</span> <span class="st">&quot;waves-effect waves-light purple btn&quot;</span>
+  (b1, _) <span class="ot">&lt;-</span> elAttr&#39; <span class="st">&quot;button&quot;</span> a1 <span class="fu">$</span> text <span class="st">&quot;Takeoff&quot;</span>
+  (b2, _) <span class="ot">&lt;-</span> elAttr&#39; <span class="st">&quot;button&quot;</span> a2 <span class="fu">$</span> text <span class="st">&quot;Land&quot;</span>
+  (b3, _) <span class="ot">&lt;-</span> elAttr&#39; <span class="st">&quot;button&quot;</span> a3 <span class="fu">$</span> text <span class="st">&quot;Emergency&quot;</span>
+  (b4, _) <span class="ot">&lt;-</span> elAttr&#39; <span class="st">&quot;button&quot;</span> a4 <span class="fu">$</span> text <span class="st">&quot;Quit&quot;</span>
+  performRequestAsync <span class="fu">$</span> pure (xhrRequest <span class="st">&quot;GET&quot;</span> <span class="st">&quot;takeoff&quot;</span> def) <span class="fu">&lt;$&gt;</span> (domEvent <span class="dt">Click</span> b1)
+  performRequestAsync <span class="fu">$</span> pure (xhrRequest <span class="st">&quot;GET&quot;</span> <span class="st">&quot;land&quot;</span> def) <span class="fu">&lt;$&gt;</span> (domEvent <span class="dt">Click</span> b2)
+  performRequestAsync <span class="fu">$</span> pure (xhrRequest <span class="st">&quot;GET&quot;</span> <span class="st">&quot;emergency&quot;</span> def) <span class="fu">&lt;$&gt;</span> (domEvent <span class="dt">Click</span> b3)
+  performRequestAsync <span class="fu">$</span> pure (xhrRequest <span class="st">&quot;GET&quot;</span> <span class="st">&quot;quit&quot;</span> def) <span class="fu">&lt;$&gt;</span> (domEvent <span class="dt">Click</span> b4)
+  blank
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> mainWidget <span class="fu">$</span> divClass <span class="st">&quot;container&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+  divClass <span class="st">&quot;row&quot;</span> <span class="fu">$</span> blank
+  quad
+  elAttr <span class="st">&quot;div&quot;</span> (<span class="st">&quot;style&quot;</span> <span class="fu">=:</span> <span class="st">&quot;width: 480px; margin: 0 auto;&quot;</span>) <span class="fu">$</span> connect
+  blank</code></pre></div></body>

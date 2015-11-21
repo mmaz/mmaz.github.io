@@ -1,0 +1,93 @@
+<head><title>backend.hs</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="generator" content="highlight-kate"><style type="text/css">div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+</style></head><body><div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span class="ot">{-# LANGUAGE DataKinds, OverloadedStrings, TypeOperators, RankNTypes, ScopedTypeVariables #-}</span>
+<span class="kw">import           </span><span class="dt">Network.Wai</span> (<span class="dt">Application</span>)
+<span class="kw">import           </span><span class="dt">Network.Wai.Handler.Warp</span> (run)
+<span class="kw">import           </span><span class="dt">Control.Monad.IO.Class</span> (liftIO)
+<span class="kw">import           </span><span class="dt">Servant</span>
+<span class="kw">import           </span><span class="dt">System.IO</span>
+<span class="kw">import           </span><span class="dt">Control.Monad.Trans.Either</span> (<span class="dt">EitherT</span>)
+
+<span class="kw">type</span> <span class="dt">BotAPI</span>   <span class="fu">=</span>   <span class="st">&quot;forward&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[] ()</span>
+            <span class="fu">:&lt;|&gt;</span>  <span class="st">&quot;backward&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[] ()</span>
+            <span class="fu">:&lt;|&gt;</span>  <span class="st">&quot;cw&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[] ()</span>
+            <span class="fu">:&lt;|&gt;</span>  <span class="st">&quot;ccw&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[] ()</span>
+            <span class="fu">:&lt;|&gt;</span>  <span class="st">&quot;stop&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[] ()</span>
+            <span class="fu">:&lt;|&gt;</span>  <span class="st">&quot;takeoff&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[] ()</span>
+            <span class="fu">:&lt;|&gt;</span>  <span class="st">&quot;land&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[] ()</span>
+            <span class="fu">:&lt;|&gt;</span>  <span class="st">&quot;higher&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[] ()</span>
+            <span class="fu">:&lt;|&gt;</span>  <span class="st">&quot;lower&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[] ()</span>
+            <span class="fu">:&lt;|&gt;</span>  <span class="st">&quot;emergency&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[] ()</span>
+            <span class="fu">:&lt;|&gt;</span>  <span class="st">&quot;quit&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[] ()</span>
+            <span class="fu">:&lt;|&gt;</span>  <span class="st">&quot;debug&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[] ()</span>
+            <span class="fu">:&lt;|&gt;</span> <span class="dt">Raw</span>
+
+forward, backward, cw, ccw, stop, takeoff, land, higher, lower, emergency, quit,<span class="ot"> debug ::</span> <span class="dt">Char</span>
+forward   <span class="fu">=</span> <span class="ch">&#39;w&#39;</span>
+backward  <span class="fu">=</span> <span class="ch">&#39;s&#39;</span>
+cw        <span class="fu">=</span> <span class="ch">&#39;d&#39;</span>
+ccw       <span class="fu">=</span> <span class="ch">&#39;a&#39;</span>
+stop      <span class="fu">=</span> <span class="ch">&#39;x&#39;</span>
+takeoff   <span class="fu">=</span> <span class="ch">&#39;t&#39;</span>
+land      <span class="fu">=</span> <span class="ch">&#39;l&#39;</span>
+higher    <span class="fu">=</span> <span class="ch">&#39;k&#39;</span>
+lower     <span class="fu">=</span> <span class="ch">&#39;j&#39;</span>
+emergency <span class="fu">=</span> <span class="ch">&#39;m&#39;</span>
+quit      <span class="fu">=</span> <span class="ch">&#39;c&#39;</span>
+debug     <span class="fu">=</span> <span class="ch">&#39;p&#39;</span>
+
+<span class="ot">server ::</span> <span class="dt">Server</span> <span class="dt">BotAPI</span>
+server <span class="fu">=</span>    out forward
+       <span class="fu">:&lt;|&gt;</span> out backward
+       <span class="fu">:&lt;|&gt;</span> out cw
+       <span class="fu">:&lt;|&gt;</span> out ccw
+       <span class="fu">:&lt;|&gt;</span> out stop
+       <span class="fu">:&lt;|&gt;</span> out takeoff
+       <span class="fu">:&lt;|&gt;</span> out land
+       <span class="fu">:&lt;|&gt;</span> out higher
+       <span class="fu">:&lt;|&gt;</span> out lower
+       <span class="fu">:&lt;|&gt;</span> out emergency
+       <span class="fu">:&lt;|&gt;</span> out quit
+       <span class="fu">:&lt;|&gt;</span> out debug
+       <span class="fu">:&lt;|&gt;</span> serveDirectory <span class="st">&quot;app.jsexe&quot;</span>
+  <span class="kw">where</span><span class="ot"> out ::</span> <span class="dt">Char</span> <span class="ot">-&gt;</span> <span class="dt">EitherT</span> <span class="dt">ServantErr</span> <span class="dt">IO</span> ()
+        out c <span class="fu">=</span> liftIO (putChar c) <span class="fu">&gt;&gt;</span> liftIO (hFlush stdout)
+
+<span class="ot">app ::</span> <span class="dt">Application</span>
+app <span class="fu">=</span> serve (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">BotAPI</span>) server
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> run <span class="dv">9876</span> app</code></pre></div></body>
