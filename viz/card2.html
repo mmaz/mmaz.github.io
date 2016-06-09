@@ -1,0 +1,12 @@
+<head>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+  <div id="myDiv" style="width: 1280px; height: 700px;"></div>
+<script>
+Plotly.d3.json("data.json", function(error,data) {
+  if (error) return console.warn(error);
+  Plotly.newPlot('myDiv', data);
+});
+</script>
+</body>
