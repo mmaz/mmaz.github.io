@@ -1,9 +1,4 @@
-Website:
+Website: https://markmaz.com
 
-https://markmaz.com
-
---
-
-Template from: [jonbarron](https://github.com/jonbarron/website/)
-
-Favicon from: [favicon.io](https://favicon.io/)
+* Template: [jonbarron](https://github.com/jonbarron/website/)
+* Favicon: [favicon.io](https://favicon.io/)
